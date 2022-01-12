@@ -56,7 +56,7 @@ viz_config.view_point_f: 500.
 viz_config.img_height: 140
 viz_config.img_width: 320
 
-viz_config.max_traj_length: 100000
+viz_config.max_traj_length: 10000
 viz_config.max_num_features: 1000
 
 viz_config.max_gps_length: 10000

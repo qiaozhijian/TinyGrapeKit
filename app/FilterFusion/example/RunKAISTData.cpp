@@ -1,11 +1,13 @@
 #include <fstream>
 #include <string>
-
+#include "Timer.h"
 #include <glog/logging.h>
 #include <opencv2/opencv.hpp>
-
+#include <math.h>
 #include <FilterFusion/Visualizer.h>
 #include <FilterFusion/FilterFusionSystem.h>
+
+using namespace std;
 
 bool LoadSensorData(const std::string& encoder_file_path, std::unordered_map<std::string, std::string>* time_data_map) {
     std::ifstream encoder_file(encoder_file_path);
@@ -21,25 +23,66 @@ bool LoadSensorData(const std::string& encoder_file_path, std::unordered_map<std
             LOG(ERROR) << "[LoadSensorData]: Find a bad line in the encoder file.: " << line_str;
             return false;
         }
-
         time_data_map->emplace(time_str, line_str);
     }
 
     return true;
 }
 
+bool LoadGT(const std::string& encoder_file_path, std::vector<std::string>& gt_time) {
+    std::ifstream encoder_file(encoder_file_path);
+    if (!encoder_file.is_open()) {
+        LOG(ERROR) << "[LoadSensorData]: Failed to open encoder file.";
+        return false;
+    }
+
+    std::string line_str, time_str;
+    gt_time.clear();
+    gt_time.reserve(140000);
+    while (std::getline(encoder_file, line_str)) {
+        std::stringstream ss(line_str);
+        if (!std::getline(ss, time_str, ',')) {
+            LOG(ERROR) << "[LoadSensorData]: Find a bad line in the encoder file.: " << line_str;
+            return false;
+        }
+        gt_time.push_back(time_str);
+    }
+
+    return true;
+}
+
+std::string searchInsert(std::vector<std::string>& nums, const std::string& target) {
+    int n = nums.size();
+    int left = 0;
+    int right = n; // 定义target在左闭右开的区间里，[left, right)  target
+    while (left < right) { // 因为left == right的时候，在[left, right)是无效的空间
+        int middle = left + ((right - left) >> 1);
+        if (nums[middle] > target) {
+            right = middle; // target 在左区间，在[left, middle)中
+        } else if (nums[middle] < target) {
+            left = middle + 1; // target 在右区间，在 [middle+1, right)中
+        } else { // nums[middle] == target
+            return nums[middle]; // 数组中找到目标值的情况，直接返回下标
+        }
+    }
+    return nums[right];
+}
+
+
 // 1. Config file.
 // 2. Dataset folder.
 int main(int argc, char** argv) {
-    if (argc != 3) {
-        LOG(ERROR) << "[main]: Please input param_file, data_folder.";
+    if (argc != 2) {
+        LOG(ERROR) << "[main]: Please input param_file.";
         return EXIT_FAILURE;
     }
 
     FLAGS_minloglevel = 3;
+    FLAGS_logtostderr = true;
     const std::string param_file = argv[1];
-    const std::string data_folder = argv[2];
-
+    const std::string data_folder = "/media/qzj/Extreme\ SSD/datasets/KAIST/ubran28/";
+    TicToc timer("vins", true);
+    TicToc timer_wheel("wheel", true);
     // Create FilterFusion system.
     FilterFusion::FilterFusionSystem FilterFusion_sys(param_file);
    
@@ -55,7 +98,22 @@ int main(int argc, char** argv) {
     if (!LoadSensorData(data_folder + "/sensor_data/gps.csv", &time_gps_map)) {
         LOG(ERROR) << "[main]: Failed to load gps data.";
         return EXIT_FAILURE;
-    } 
+    }
+
+    // Load all gps data to buffer.
+    std::unordered_map<std::string, std::string> time_groundtruth;
+    if (!LoadSensorData(data_folder + "/global_pose.csv", &time_groundtruth)) {
+        LOG(ERROR) << "[main]: Failed to load groundtruth data.";
+        return EXIT_FAILURE;
+    }
+    std::vector<std::string> gt_time;
+    bool first = true;
+    Eigen::Matrix3d G_R_O;
+    Eigen::Vector3d G_p_O;
+    Eigen::Matrix3d G_R_O_init;
+    Eigen::Vector3d G_p_O_init;
+
+    LoadGT(data_folder + "/global_pose.csv", gt_time);
 
     std::ifstream file_data_stamp(data_folder + "/sensor_data/data_stamp.csv");
     if (!file_data_stamp.is_open()) {
@@ -76,7 +134,9 @@ int main(int argc, char** argv) {
         const double timestamp = std::stod(time_str) * kToSecond;
         
         const std::string& sensor_type = line_data_vec[1];
+        printf("%s\r", sensor_type.c_str());
         if (sensor_type == "stereo") {
+            timer.tic();
             const std::string img_file = data_folder + "/image/stereo_left/" + time_str + ".png";
             const cv::Mat raw_image = cv::imread(img_file, CV_LOAD_IMAGE_ANYDEPTH);
             if (raw_image.empty()) {
@@ -94,9 +154,12 @@ int main(int argc, char** argv) {
 
             // Feed image to system.
             FilterFusion_sys.FeedImageData(timestamp, gray_img);
+            timer.toc();
+            timer.print();
         }
 
         if (sensor_type == "encoder") {
+            timer_wheel.tic();
             if (time_encoder_map.find(time_str) == time_encoder_map.end()) {
                 LOG(ERROR) << "[main]: Failed to find encoder data at time: " << time_str;
                 return EXIT_FAILURE;
@@ -111,6 +174,8 @@ int main(int argc, char** argv) {
 
             // Feed wheel data to system.
             FilterFusion_sys.FeedWheelData(timestamp, left_enc_cnt, right_enc_cnt);
+            timer_wheel.toc();
+            timer_wheel.print();
         }
 
         if (sensor_type == "gps") {
@@ -135,6 +200,31 @@ int main(int argc, char** argv) {
             // Feed gps data to system.
             FilterFusion_sys.FeedGpsData(timestamp, lon, lat, hei, cov);
         }
+
+        std::string nearest = searchInsert(gt_time, time_str);
+//        printf("%s, %s", nearest.c_str(), time_str.c_str());
+        if (time_groundtruth.find(nearest.c_str()) == time_groundtruth.end()) {
+            LOG(ERROR) << "[main]: Failed to find groundtruth data at time: " << nearest.c_str();
+            return EXIT_FAILURE;
+        }
+        const std::string& gt_str = time_groundtruth.at(nearest);
+        std::stringstream gt_ss(gt_str);
+        line_data_vec.clear();
+        while (std::getline(gt_ss, value_str, ',')) { line_data_vec.push_back(value_str); }
+        G_R_O << std::stod(line_data_vec[1]), std::stod(line_data_vec[2]), std::stod(line_data_vec[3]),
+                std::stod(line_data_vec[5]), std::stod(line_data_vec[6]), std::stod(line_data_vec[7]),
+                std::stod(line_data_vec[9]), std::stod(line_data_vec[10]), std::stod(line_data_vec[11]);
+        G_p_O << std::stod(line_data_vec[4]), std::stod(line_data_vec[8]), std::stod(line_data_vec[12]);
+
+        if(first){
+            G_R_O_init = G_R_O;
+            G_p_O_init = G_p_O;
+            first = false;
+        }
+//        G_R_O = G_R_O_init.transpose() * G_R_O;
+//        G_p_O = G_R_O_init.transpose() * G_p_O - G_R_O_init.transpose() * G_p_O_init;
+        G_p_O = G_p_O - G_p_O_init;
+        FilterFusion_sys.FeedGroundTruth(timestamp, G_R_O, G_p_O);
     }
 
     std::cin.ignore();
