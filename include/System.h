@@ -59,13 +59,64 @@ public:
     {
         while(1)
         {
+            cv::Mat image;
+            std_msgs::Header header;
+            double time = 0;
+            m_buf.lock();
+            if(!img_buf.empty())
+            {
+                time = img_buf.front()->header.stamp.toSec();
+                header = img_buf.front()->header;
+                image = getImageFromMsg(img_buf.front());
+                img_buf.pop();
+            }
+            m_buf.unlock();
+
+            if(!image.empty())
+                mpFilterFusion->FeedImageData(time, image);
 
 
+            m_buf.lock();
+            if(!encoder_buf.empty())
+            {
+                time = encoder_buf.front()->header.stamp.toSec();
+                header = encoder_buf.front()->header;
+                encoder_buf.front();
+//                const double left_enc_cnt = std::stod(line_data_vec[1]);
+//                const double right_enc_cnt = std::stod(line_data_vec[2]);
 
+                // Feed wheel data to system.
+//                mpFilterFusion->FeedWheelData(time, left_enc_cnt, right_enc_cnt);
+
+                encoder_buf.pop();
+            }
+            m_buf.unlock();
 
             std::chrono::milliseconds dura(2);
             std::this_thread::sleep_for(dura);
         }
+    }
+
+    cv::Mat getImageFromMsg(const sensor_msgs::ImageConstPtr &img_msg)
+    {
+        cv_bridge::CvImageConstPtr ptr;
+        if (img_msg->encoding == "8UC1")
+        {
+            sensor_msgs::Image img;
+            img.header = img_msg->header;
+            img.height = img_msg->height;
+            img.width = img_msg->width;
+            img.is_bigendian = img_msg->is_bigendian;
+            img.step = img_msg->step;
+            img.data = img_msg->data;
+            img.encoding = "mono8";
+            ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
+        }
+        else
+            ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
+
+        cv::Mat img = ptr->image.clone();
+        return img;
     }
 
 private:

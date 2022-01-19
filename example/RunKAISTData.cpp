@@ -90,6 +90,7 @@ int main(int argc, char** argv) {
 
     ros::spin();
 
+    return 0;
 
     const std::string data_folder = "/media/qzj/Extreme\ SSD/datasets/KAIST/urban28";
     TicToc timer("vins", true);
