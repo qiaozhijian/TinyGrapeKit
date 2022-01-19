@@ -5,7 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
 #include <FilterFusion/Visualizer.h>
-#include <FilterFusion/FilterFusionSystem.h>
+#include "System.h"
 
 using namespace std;
 
@@ -72,6 +72,10 @@ std::string searchInsert(std::vector<std::string>& nums, const std::string& targ
 // 1. Config file.
 // 2. Dataset folder.
 int main(int argc, char** argv) {
+
+    ros::init(argc, argv, "msckf_viw");
+    ros::NodeHandle nh("~");
+
     if (argc != 2) {
         LOG(ERROR) << "[main]: Please input param_file.";
         return EXIT_FAILURE;
@@ -80,11 +84,19 @@ int main(int argc, char** argv) {
     FLAGS_minloglevel = 3;
     FLAGS_logtostderr = true;
     const std::string param_file = argv[1];
+
+    shared_ptr<System> mpSystem = std::make_shared<System>(nh, param_file);
+    std::thread sync_thread(&System::sync_process, mpSystem);
+
+    ros::spin();
+
+
     const std::string data_folder = "/media/qzj/Extreme\ SSD/datasets/KAIST/urban28";
     TicToc timer("vins", true);
     TicToc timer_wheel("wheel", true);
 
     std::cout<< data_folder <<std::flush<<std::endl;
+
 
     // Create FilterFusion system.
     FilterFusion::FilterFusionSystem FilterFusion_sys(param_file);

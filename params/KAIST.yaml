@@ -1,5 +1,9 @@
 %YAML:1.0
 
+image_topic: /image/left_raw
+encoder_topic: /TwistStamped/encoder
+imu_topic: /imu/data
+
 # Camera intrinsic
 Camera.fx: 8.1690378992770002e+02
 Camera.fy: 8.1156803828490001e+02
