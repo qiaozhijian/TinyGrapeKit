@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.8)
-project(FilterFusion)
+project(msckf_viw)
 
 # Set C++14
 add_compile_options(-std=c++14)
@@ -15,10 +15,22 @@ find_package(OpenCV 3 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(Ceres REQUIRED)
 
+find_package(catkin REQUIRED COMPONENTS
+        roscpp
+        std_msgs
+        geometry_msgs
+        nav_msgs
+        tf
+        cv_bridge
+        image_transport
+        )
+catkin_package()
+
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${CERES_INCLUDE_DIRS})
 include_directories(${OpenCV_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS}/opencv4)
 include_directories(${GLOG_INCLUDE_DIR})
+include_directories(${catkin_INCLUDE_DIRS})
 
 include_directories(
         ${PROJECT_SOURCE_DIR}/include
@@ -38,8 +50,8 @@ file(GLOB_RECURSE ALL_SRC_FILES
 )
 
 add_library(${PROJECT_NAME} SHARED ${ALL_SRC_FILES} ${ALL_HEADER_FILES})
-target_link_libraries(${PROJECT_NAME} pangolin libGeographiccc ${CERES_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} pangolin libGeographiccc ${CERES_LIBRARIES} ${catkin_LIBRARIES} glog ${OpenCV_LIBS})
 
 ## Declare C++ executables
 add_executable(RunKAISTData example/RunKAISTData.cpp)
-target_link_libraries(RunKAISTData glog ${OpenCV_LIBS} ${PROJECT_NAME})
+target_link_libraries(RunKAISTData ${PROJECT_NAME})
