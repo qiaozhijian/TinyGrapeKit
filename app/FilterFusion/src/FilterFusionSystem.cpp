@@ -69,6 +69,11 @@ FilterFusionSystem::FilterFusionSystem(const std::string& param_file)
         wheel_propagator_ = std::make_unique<TGK::WheelProcessor::WheelPropagator>(
             param_.wheel_param.kl, param_.wheel_param.kr, param_.wheel_param.b);
     }
+
+    trajectoryF.open("msckf_traj.txt");
+    trajectoryF << std::fixed;
+    rawOdoF.open("raw_traj.txt");
+    rawOdoF << std::fixed;
 }
 
 bool FilterFusionSystem::FeedWheelData(const double timestamp, const double left, const double right) {
@@ -177,6 +182,7 @@ bool FilterFusionSystem::FeedWheelData(const double timestamp, const double left
     viz_->DrawFeatures(map_points);
     viz_->DrawCameras(GetCameraPoses());
 
+    WriteFile(timestamp, state_.wheel_pose.G_R_O, state_.wheel_pose.G_p_O);
     if (image_type == TGK::BaseType::MeasureType::kMonoImage) {
         viz_->DrawImage(img_ptr->image, tracked_features, new_features);
     } else if (image_type == TGK::BaseType::MeasureType::kSimMonoImage) {
@@ -186,11 +192,39 @@ bool FilterFusionSystem::FeedWheelData(const double timestamp, const double left
     // Draw raw wheel odometry.
     if (config_.compute_raw_odom_) {
         viz_->DrawWheelOdom(odom_G_R_O_, odom_G_p_O_);
+        WriteOdoFile(timestamp, odom_G_R_O_, odom_G_p_O_);
     }
 
     return true;
 }
-    
+
+void FilterFusionSystem::WriteFile(const double mTimeStamp, const Eigen::Matrix3d& G_R_O, const Eigen::Vector3d& G_p_O){
+
+    Eigen::Quaterniond q(G_R_O);
+    std::vector<float> v(4);
+    v[0] = q.x();
+    v[1] = q.y();
+    v[2] = q.z();
+    v[3] = q.w();
+
+    trajectoryF << std::setprecision(6) << mTimeStamp << std::setprecision(7) << " " << G_p_O(0)
+            << " " << G_p_O(1) << " " << G_p_O(2) << " " << q.x() << " " << q.y()
+            << " " << q.z() << " " << q.w() << std::endl;
+}
+
+void FilterFusionSystem::WriteOdoFile(const double mTimeStamp, const Eigen::Matrix3d& G_R_O, const Eigen::Vector3d& G_p_O){
+    Eigen::Quaterniond q(G_R_O);
+    std::vector<float> v(4);
+    v[0] = q.x();
+    v[1] = q.y();
+    v[2] = q.z();
+    v[3] = q.w();
+
+    rawOdoF << std::setprecision(6) << mTimeStamp << std::setprecision(7) << " " << G_p_O(0)
+            << " " << G_p_O(1) << " " << G_p_O(2) << " " << q.x() << " " << q.y()
+            << " " << q.z() << " " << q.w() << std::endl;
+}
+
 bool FilterFusionSystem::FeedImageData(const double timestamp, const cv::Mat& image) {
     // Convert to internal struct.
     const TGK::BaseType::MonoImageDataPtr img_ptr = std::make_shared<TGK::BaseType::MonoImageData>();

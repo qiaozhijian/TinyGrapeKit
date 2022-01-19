@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
         const double timestamp = std::stod(time_str) * kToSecond;
         
         const std::string& sensor_type = line_data_vec[1];
-        printf("%s\r", sensor_type.c_str());
+//        printf("%s\r", sensor_type.c_str());
         if (sensor_type == "stereo") {
             timer.tic();
             const std::string img_file = data_folder + "/image/stereo_left/" + time_str + ".png";
@@ -226,6 +226,8 @@ int main(int argc, char** argv) {
         G_p_O = G_p_O - G_p_O_init;
         FilterFusion_sys.FeedGroundTruth(timestamp, G_R_O, G_p_O);
     }
+
+    FilterFusion_sys.FileClose();
 
     std::cin.ignore();
 

@@ -20,6 +20,8 @@
 #include <FilterFusion/PlaneUpdater.h>
 #include <FilterFusion/GpsUpdater.h>
 #include <FilterFusion/Visualizer.h>
+#include <iostream>
+#include <fstream>
 
 namespace FilterFusion {
 
@@ -48,6 +50,13 @@ public:
                      
     void FeedGroundTruth(const double timestamp, const Eigen::Matrix3d& G_R_O, const Eigen::Vector3d& G_p_O);
 
+    void WriteFile(const double mTimeStamp, const Eigen::Matrix3d& G_R_O, const Eigen::Vector3d& G_p_O);
+    void WriteOdoFile(const double mTimeStamp, const Eigen::Matrix3d& G_R_O, const Eigen::Vector3d& G_p_O);
+
+    void FileClose(void){
+        trajectoryF.close();
+        rawOdoF.close();
+    }
 private:
     std::vector<std::pair<Eigen::Matrix3d, Eigen::Vector3d>> GetCameraPoses();
 
@@ -77,6 +86,9 @@ private:
 
     // JUST FOR INITIALIZATION.
     TGK::BaseType::GpsDataConstPtr latest_gps_data_ = nullptr;
+
+    std::ofstream trajectoryF;
+    std::ofstream rawOdoF;
 };
 
 }  // namespace FilterFusion
