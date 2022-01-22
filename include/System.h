@@ -106,14 +106,15 @@ public:
 
                 static int count = -1;
                 count ++;
-                double timestamp0 = 1544590798713209835/1e9;
+                static double timestamp0 = 1544590798713209835/1e9;
                 time_encoder_temp = encoder_buf.front()->header.stamp.toSec();
-                double delta_t = 2*(time_encoder_temp-timestamp0);
+
                 if(count)
                 {
-                    timestamp0 = time_encoder_temp;
+                    timestamp0 = time_encoder;
                 }
-                time_encoder = timestamp0+delta_t;
+                time_encoder = 2*time_encoder_temp-timestamp0;
+
                 std::cerr<<"time_encoder"<<time_encoder<<std::endl;
                 header_encoder = encoder_buf.front()->header;
 
@@ -157,15 +158,15 @@ public:
     double getleft_enc_cnt(const geometry_msgs::TwistStampedConstPtr &encoder_msgs)
     {
 
-        static int count = -1;
-        count ++;
+        static int countl = -1;
+        countl ++;
 
         double kl = 0.00047820240382508;
         double kr = 0.00047768621928995;
         double b = 1.52439;
 
-        double timestamp0 = 1544590798713209835/1e9;
-        double left_enc_cnt0 = 15902462;
+        static double timestamp0l = 1544590798713209835/1e9;
+        static double left_enc_cnt0 = 15902462;
 
         double left_enc_cnt = 0;
 
@@ -178,34 +179,38 @@ public:
         double az = encoder_msgs->twist.angular.z;
         double timestamp = encoder_msgs->header.stamp.toSec();
 
-        double delta_t = 2*(timestamp-timestamp0);
-        double delta_l = (double)(2*delta_t*vx-az*b)/(double)(2*kl);
+//        double delta_t = 2*(timestamp-timestamp0);
+//        double delta_l = (double)(2*delta_t*vx-az*b)/(double)(2*kl);
 
-        if(count)
+        double delta_t= 2*timestamp-timestamp0l;
+
+        left_enc_cnt = left_enc_cnt0 + (4*vx*(timestamp-timestamp0l)-az*b)/(2*kl);
+
+        if(countl)
         {
             left_enc_cnt0 = left_enc_cnt;
-            timestamp0 = timestamp;
+            timestamp0l = delta_t;
         }
 
-        left_enc_cnt = left_enc_cnt0+delta_l;
 
-        std::cerr<<"10"<<std::endl;
-        std::cerr<<"left_enc_cnt"<<left_enc_cnt<<std::endl;
+//
+//        std::cerr<<"10"<<std::endl;
+//        std::cerr<<"left_enc_cnt"<<left_enc_cnt<<std::endl;
 
         return left_enc_cnt;
     }
 
     double getright_enc_cnt(const geometry_msgs::TwistStampedConstPtr &encoder_msgs)
     {
-        static int count = -1;
-        count ++;
+        static int countr = -1;
+        countr ++;
 
         double kl = 0.00047820240382508;
         double kr = 0.00047768621928995;
         double b = 1.52439;
 
-        double timestamp0 = 1544590798713209835/1e9;
-        double right_enc_cnt0 = 15902462;
+        static double timestamp0r = 1544590798713209835/1e9;
+        static double right_enc_cnt0 = 15902462;
 
         double right_enc_cnt = 0;
 
@@ -219,16 +224,15 @@ public:
         double timestamp = encoder_msgs->header.stamp.toSec();
 
 
+        double delta_t= 2*timestamp-timestamp0r;
 
-        double delta_t = 2*(timestamp-timestamp0);
-        double delta_l = (double)(2*delta_t*vx+az*b)/(double)(2*kr);
+        right_enc_cnt = right_enc_cnt0 + (4*vx*(timestamp-timestamp0r)-az*b)/(2*kl);
 
-        if(count)
+        if(countr)
         {
             right_enc_cnt0 = right_enc_cnt;
+            timestamp0r = delta_t;
         }
-
-        right_enc_cnt = right_enc_cnt0+delta_l;
 
 //        std::cerr<<"11"<<std::endl;
 //        std::cerr<<"right_enc_cnt0"<<right_enc_cnt0<<std::endl;
