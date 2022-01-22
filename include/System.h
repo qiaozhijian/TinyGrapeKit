@@ -104,33 +104,33 @@ public:
             if(!encoder_buf.empty())
             {
 
-//                static int count = -1;
-//                count ++;
-//
-//                double timestamp0 = 1544590798713209835/1e9;
-//
-//                time_encoder_temp = encoder_buf.front()->header.stamp.toSec();
-//                double delta_t = 2*(time_encoder_temp-timestamp0);
-//
-//
+                static int count = -1;
+                count ++;
+
+                double timestamp0 = 1544590798713209835/1e9;
+
+                time_encoder_temp = encoder_buf.front()->header.stamp.toSec();
+                double delta_t = 2*(time_encoder_temp-timestamp0);
+
+
 //                std::cerr<<"aaaaaa"<<std::endl;
 //
 //                std::cerr<<"timestamp0"<<timestamp0<<std::endl;
 //
 //                std::cerr<<"time_encoder_temp"<<time_encoder_temp<<std::endl;
 //                std::cerr<<"delta_t"<<delta_t<<std::endl;
-//
-//                std::cerr<<"8"<<std::endl;
-//
-//                if(count)
-//                {
-//                    timestamp0 = time_encoder_temp;
-//                }
-//                time_encoder = timestamp0+delta_t;
-//
-//                std::cerr<<"time_encoder"<<time_encoder<<std::endl;
-//
-//                header_encoder = encoder_buf.front()->header;
+
+                std::cerr<<"8"<<std::endl;
+
+                if(count)
+                {
+                    timestamp0 = time_encoder_temp;
+                }
+                time_encoder = timestamp0+delta_t;
+
+                std::cerr<<"time_encoder"<<time_encoder<<std::endl;
+
+                header_encoder = encoder_buf.front()->header;
 
                 left_enc_cnt = getleft_enc_cnt(encoder_buf.front());
                 right_enc_cnt = getright_enc_cnt(encoder_buf.front());
@@ -140,14 +140,17 @@ public:
 //                const double right_enc_cnt = std::stod(line_data_vec[2]);
 
                 // Feed wheel data to system.
-//                mpFilterFusion->FeedWheelData(time, left_enc_cnt, right_enc_cnt);
+                mpFilterFusion->FeedWheelData(time_encoder, left_enc_cnt, right_enc_cnt);
 
                 encoder_buf.pop();
             }
             m_buf.unlock();
 
-//            std::cerr<<left_enc_cnt<<std::endl;
-//            std::cerr<<right_enc_cnt<<std::endl;
+            std::cerr<<left_enc_cnt<<std::endl;
+            std::cerr<<right_enc_cnt<<std::endl;
+
+
+                std::cerr<<"time_encoder"<<time_encoder<<std::endl;
 
             if(right_enc_cnt)
                 mpFilterFusion->FeedWheelData(time_encoder, left_enc_cnt, right_enc_cnt);
@@ -258,13 +261,13 @@ public:
 
         right_enc_cnt = right_enc_cnt0+delta_l;
 
-        std::cerr<<"11"<<std::endl;
-        std::cerr<<"right_enc_cnt0"<<right_enc_cnt0<<std::endl;
-        std::cerr<<"timestamp"<<timestamp<<std::endl;
-        std::cerr<<"count"<<count<<std::endl;
-        std::cerr<<"delta_t"<<delta_t<<std::endl;
-        std::cerr<<"vx"<<vx<<std::endl;
-        std::cerr<<"az"<<az<<std::endl;
+//        std::cerr<<"11"<<std::endl;
+//        std::cerr<<"right_enc_cnt0"<<right_enc_cnt0<<std::endl;
+//        std::cerr<<"timestamp"<<timestamp<<std::endl;
+//        std::cerr<<"count"<<count<<std::endl;
+//        std::cerr<<"delta_t"<<delta_t<<std::endl;
+//        std::cerr<<"vx"<<vx<<std::endl;
+//        std::cerr<<"az"<<az<<std::endl;
 
         std::cerr<<"right_enc_cnt"<<right_enc_cnt<<std::endl;
 
