@@ -8,12 +8,17 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 # Set cmake
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
+
 # Third party dependencies
 find_package(Eigen3  REQUIRED)
 find_package(GLOG  REQUIRED)
 find_package(OpenCV 3 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(Ceres REQUIRED)
+
+#find_package(GeographicLib REQUIRED)
+#include_directories(${GeographicLib_INCLUDE_DIR})
+
 
 find_package(catkin REQUIRED COMPONENTS
         roscpp
@@ -32,9 +37,14 @@ include_directories(${OpenCV_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS}/opencv4)
 include_directories(${GLOG_INCLUDE_DIR})
 include_directories(${catkin_INCLUDE_DIRS})
 
+include_directories(${GeographicLib_INCLUDE_DIRS} /home/devil/slam/GeographicLib/include )
+
+
+
 include_directories(
         ${PROJECT_SOURCE_DIR}/include
         ${Pangolin_INCLUDE_DIRS}
+        /home/devil/slam/GeographicLib/include/
 )
 
 # GeographicLib
@@ -50,7 +60,8 @@ file(GLOB_RECURSE ALL_SRC_FILES
 )
 
 add_library(${PROJECT_NAME} SHARED ${ALL_SRC_FILES} ${ALL_HEADER_FILES})
-target_link_libraries(${PROJECT_NAME} pangolin libGeographiccc ${CERES_LIBRARIES} ${catkin_LIBRARIES} glog ${OpenCV_LIBS})
+#target_link_libraries(${PROJECT_NAME} pangolin ${CERES_LIBRARIES} ${catkin_LIBRARIES} glog ${OpenCV_LIBS} /home/devil/slam/GeographicLib/build/liblibGeographiccc.so)
+target_link_libraries(${PROJECT_NAME} pangolin ${CERES_LIBRARIES} ${catkin_LIBRARIES}  ${OpenCV_LIBS} /home/devil/slam/GeographicLib/build/liblibGeographiccc.so)
 
 ## Declare C++ executables
 add_executable(RunKAISTData example/RunKAISTData.cpp)

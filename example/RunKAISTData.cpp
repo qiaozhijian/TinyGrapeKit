@@ -73,6 +73,10 @@ std::string searchInsert(std::vector<std::string>& nums, const std::string& targ
 // 2. Dataset folder.
 int main(int argc, char** argv) {
 
+
+    std::cerr<<"1"<<std::endl;
+
+
     ros::init(argc, argv, "msckf_viw");
     ros::NodeHandle nh("~");
 
@@ -81,6 +85,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+
+    std::cerr<<"2"<<std::endl;
+
     FLAGS_minloglevel = 3;
     FLAGS_logtostderr = true;
     const std::string param_file = argv[1];
@@ -88,7 +95,11 @@ int main(int argc, char** argv) {
     shared_ptr<System> mpSystem = std::make_shared<System>(nh, param_file);
     std::thread sync_thread(&System::sync_process, mpSystem);
 
+    std::cerr<<"3"<<std::endl;
+
     ros::spin();
+
+    std::cerr<<"4"<<std::endl;
 
     return 0;
 
