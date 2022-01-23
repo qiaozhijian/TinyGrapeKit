@@ -31,16 +31,15 @@ public:
         encoder_topic = cv_params["encoder_topic"].string();
         imu_topic = cv_params["imu_topic"].string();
 
-        std::cerr<<"5"<<std::endl;
-
+        LOG(INFO) << "Subscribe image_topic " << image_topic;
+        LOG(INFO) << "Subscribe encoder_topic " << encoder_topic;
+        LOG(INFO) << "Subscribe imu_topic " << imu_topic;
         subImage = nh.subscribe<sensor_msgs::ImageConstPtr>(image_topic, 50, &System::ImageHandler, this);
 //        subEncoder = nh.subscribe<geometry_msgs::TwistStampedConstPtr>(encoder_topic, 50, &System::EncoderHandler, this);
         subEncoder = nh.subscribe<nav_msgs::OdometryConstPtr>(encoder_topic, 50, &System::EncoderHandler, this);
         subIMU = nh.subscribe<sensor_msgs::ImuConstPtr>(imu_topic, 50, &System::IMUHandler, this);
 
         mpFilterFusion = std::make_shared<FilterFusion::FilterFusionSystem>(param_file);
-
-        std::cerr<<"6"<<std::endl;
     }
 
     void ImageHandler(sensor_msgs::ImageConstPtr msg){
@@ -68,37 +67,48 @@ public:
 
     void sync_process()
     {
-        while(1)
+        cv::Mat image;
+        double left_enc_cnt, right_enc_cnt;
+        double time_img, time_encoder;
+        bool encoder_ready = false;
+        bool camera_ready = false;
+        while(ros::ok())
         {
-            cv::Mat image;
-            std_msgs::Header header_img;
-            double time_img = 0;
+            m_buf.lock();
+            if(!encoder_buf.empty())
+            {
+                time_encoder = encoder_buf.front()->header.stamp.toSec();
+                left_enc_cnt = getleft_enc_cnt(encoder_buf.front());
+                right_enc_cnt = getright_enc_cnt(encoder_buf.front());
+
+                encoder_ready = true;
+                encoder_buf.pop();
+            }
+            m_buf.unlock();
+
+            if(encoder_ready){
+                encoder_ready = false;
+                mpFilterFusion->FeedWheelData(time_encoder, left_enc_cnt, right_enc_cnt);
+            }
 
             m_buf.lock();
             if(!img_buf.empty())
             {
                 time_img = img_buf.front()->header.stamp.toSec();
-                header_img = img_buf.front()->header;
                 image = getImageFromMsg(img_buf.front());
+                camera_ready = true;
                 img_buf.pop();
-
-                std::cerr<<"7"<<std::endl;
             }
             m_buf.unlock();
 
-            if(!image.empty())
+            if(camera_ready)
             {
-                cv::imshow("image",image);
-                cv::waitKey(10);
+                camera_ready = false;
                 mpFilterFusion->FeedImageData(time_img, image);
             }
 
-
-
-
 //            double left_enc_cnt = 0;
 //            double right_enc_cnt = 0;
-//            std_msgs::Header header_encoder;
 //            double time_encoder_temp = 0;
 //            double time_encoder = 0;
 //            m_buf.lock();
@@ -118,7 +128,6 @@ public:
 //                time_encoder = 2*time_encoder_temp-timestamp0;
 //
 //                std::cerr<<"time_encoder"<<time_encoder<<std::endl;
-//                header_encoder = encoder_buf.front()->header;
 //
 //                left_enc_cnt = getleft_enc_cnt(encoder_buf.front());
 //                right_enc_cnt = getright_enc_cnt(encoder_buf.front());
@@ -128,41 +137,13 @@ public:
 //
 //            if(right_enc_cnt)
 //                mpFilterFusion->FeedWheelData(time_encoder, left_enc_cnt, right_enc_cnt);
-            double left_enc_cnt;
-            double right_enc_cnt;
-            std_msgs::Header header_encoder;
-            double time_encoder = 0;
-
-//            m_buf.lock();
-            if(!encoder_buf.empty())
-            {
-                time_encoder = encoder_buf.front()->header.stamp.toSec();
-                header_encoder = encoder_buf.front()->header;
-                left_enc_cnt = getleft_enc_cnt(encoder_buf.front());
-                right_enc_cnt = getright_enc_cnt(encoder_buf.front());
-
-                std::cerr<<"time_encoder"<<time_encoder<<std::endl;
-                std::cerr<<"left_enc_cnt"<<left_enc_cnt<<std::endl;
-                std::cerr<<"right_enc_cnt"<<right_enc_cnt<<std::endl;
-
-                encoder_buf.pop();
-
-            }
-            m_buf.unlock();
-
-            if(right_enc_cnt)
-            {
-                std::cerr<<"time_encoder"<<time_encoder<<std::endl;
-                std::cerr<<"left_enc_cnt"<<left_enc_cnt<<std::endl;
-                std::cerr<<"right_enc_cnt"<<right_enc_cnt<<std::endl;
-                mpFilterFusion->FeedWheelData(time_encoder, left_enc_cnt, right_enc_cnt);
-            }
 
             std::chrono::milliseconds dura(2);
             std::this_thread::sleep_for(dura);
             mpFilterFusion->FileClose();
 
         }
+        return ;
     }
 
     cv::Mat getImageFromMsg(const sensor_msgs::ImageConstPtr &img_msg)
@@ -184,7 +165,6 @@ public:
             ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
 
         cv::Mat img = ptr->image.clone();
-        std::cerr<<"9"<<std::endl;
         return img;
     }
 

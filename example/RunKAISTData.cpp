@@ -1,4 +1,3 @@
-#include <fstream>
 #include <string>
 #include "Timer.h"
 #include <glog/logging.h>
@@ -6,78 +5,14 @@
 #include <math.h>
 #include <FilterFusion/Visualizer.h>
 #include "System.h"
+#include "Util/Util.hpp"
+#include "Util/file_manager.hpp"
 
 using namespace std;
 
-bool LoadSensorData(const std::string& encoder_file_path, std::unordered_map<std::string, std::string>* time_data_map) {
-    std::ifstream encoder_file(encoder_file_path);
-    if (!encoder_file.is_open()) {
-        LOG(ERROR) << "[LoadSensorData]: Failed to open encoder file.";
-        return false;
-    }
-
-    std::string line_str, time_str;
-    while (std::getline(encoder_file, line_str)) {
-        std::stringstream ss(line_str);
-        if (!std::getline(ss, time_str, ',')) {
-            LOG(ERROR) << "[LoadSensorData]: Find a bad line in the encoder file.: " << line_str;
-            return false;
-        }
-        time_data_map->emplace(time_str, line_str);
-    }
-
-    return true;
-}
-
-bool LoadGT(const std::string& encoder_file_path, std::vector<std::string>& gt_time) {
-    std::ifstream encoder_file(encoder_file_path);
-    if (!encoder_file.is_open()) {
-        LOG(ERROR) << "[LoadSensorData]: Failed to open encoder file.";
-        return false;
-    }
-
-    std::string line_str, time_str;
-    gt_time.clear();
-    gt_time.reserve(140000);
-    while (std::getline(encoder_file, line_str)) {
-        std::stringstream ss(line_str);
-        if (!std::getline(ss, time_str, ',')) {
-            LOG(ERROR) << "[LoadSensorData]: Find a bad line in the encoder file.: " << line_str;
-            return false;
-        }
-        gt_time.push_back(time_str);
-    }
-
-    return true;
-}
-
-std::string searchInsert(std::vector<std::string>& nums, const std::string& target) {
-    int n = nums.size();
-    int left = 0;
-    int right = n; // 定义target在左闭右开的区间里，[left, right)  target
-    while (left < right) { // 因为left == right的时候，在[left, right)是无效的空间
-        int middle = left + ((right - left) >> 1);
-        if (nums[middle] > target) {
-            right = middle; // target 在左区间，在[left, middle)中
-        } else if (nums[middle] < target) {
-            left = middle + 1; // target 在右区间，在 [middle+1, right)中
-        } else { // nums[middle] == target
-            return nums[middle]; // 数组中找到目标值的情况，直接返回下标
-        }
-    }
-    return nums[right];
-}
-
-
-// 1. Config file.
-// 2. Dataset folder.
 int main(int argc, char** argv) {
 
-
-    std::cerr<<"1"<<std::endl;
-
-
-    ros::init(argc, argv, "msckf_viw");
+    ros::init(argc, argv, "RunKAISTData");
     ros::NodeHandle nh("~");
 
     if (argc != 2) {
@@ -85,23 +20,26 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    string WORK_SPACE_PATH;
+    nh.param<std::string>("project_dir", WORK_SPACE_PATH, "blank_dir");
 
-    std::cerr<<"2"<<std::endl;
-
-    FLAGS_minloglevel = 3;
-    FLAGS_logtostderr = true;
+    google::InitGoogleLogging(argv[0]);
+    FLAGS_log_dir = WORK_SPACE_PATH + "/Log";
+    FLAGS_alsologtostderr = true;
+    FLAGS_colorlogtostderr = true;
+    FLAGS_log_prefix = true;
+    FLAGS_logbufsecs = 0;
+    TGK::FileManager::CreateDirectory(FLAGS_log_dir);
     const std::string param_file = argv[1];
+
+    LOG(INFO) << "Load param_file " << param_file;
 
     shared_ptr<System> mpSystem = std::make_shared<System>(nh, param_file);
     std::thread sync_thread(&System::sync_process, mpSystem);
 
-    std::cerr<<"3"<<std::endl;
-
     ros::spin();
 
-    std::cerr<<"4"<<std::endl;
-
-    return EXIT_SUCCESS;
+    return 0;
 
 //    const std::string data_folder = "/media/qzj/Extreme\ SSD/datasets/KAIST/urban28";
 //    TicToc timer("vins", true);
@@ -115,21 +53,21 @@ int main(int argc, char** argv) {
 //
 //    // Load all encoder data to buffer.
 //    std::unordered_map<std::string, std::string> time_encoder_map;
-//    if (!LoadSensorData(data_folder + "/sensor_data/encoder.csv", &time_encoder_map)) {
+//    if (!TGK::Util::LoadSensorData(data_folder + "/sensor_data/encoder.csv", &time_encoder_map)) {
 //        LOG(ERROR) << "[main]: Failed to load encoder data.";
 //        return EXIT_FAILURE;
 //    }
 //
 //    // Load all gps data to buffer.
 //    std::unordered_map<std::string, std::string> time_gps_map;
-//    if (!LoadSensorData(data_folder + "/sensor_data/gps.csv", &time_gps_map)) {
+//    if (!TGK::Util::LoadSensorData(data_folder + "/sensor_data/gps.csv", &time_gps_map)) {
 //        LOG(ERROR) << "[main]: Failed to load gps data.";
 //        return EXIT_FAILURE;
 //    }
 //
 //    // Load all gps data to buffer.
 //    std::unordered_map<std::string, std::string> time_groundtruth;
-//    if (!LoadSensorData(data_folder + "/global_pose.csv", &time_groundtruth)) {
+//    if (!TGK::Util::LoadSensorData(data_folder + "/global_pose.csv", &time_groundtruth)) {
 //        LOG(ERROR) << "[main]: Failed to load groundtruth data.";
 //        return EXIT_FAILURE;
 //    }
@@ -140,7 +78,7 @@ int main(int argc, char** argv) {
 //    Eigen::Matrix3d G_R_O_init;
 //    Eigen::Vector3d G_p_O_init;
 //
-//    LoadGT(data_folder + "/global_pose.csv", gt_time);
+//    TGK::Util::LoadGT(data_folder + "/global_pose.csv", gt_time);
 //
 //    std::ifstream file_data_stamp(data_folder + "/sensor_data/data_stamp.csv");
 //    if (!file_data_stamp.is_open()) {
@@ -228,7 +166,7 @@ int main(int argc, char** argv) {
 //            FilterFusion_sys.FeedGpsData(timestamp, lon, lat, hei, cov);
 //        }
 //
-//        std::string nearest = searchInsert(gt_time, time_str);
+//        std::string nearest = TGK::Util::searchInsert(gt_time, time_str);
 ////        printf("%s, %s", nearest.c_str(), time_str.c_str());
 //        if (time_groundtruth.find(nearest.c_str()) == time_groundtruth.end()) {
 //            LOG(ERROR) << "[main]: Failed to find groundtruth data at time: " << nearest.c_str();

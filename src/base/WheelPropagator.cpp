@@ -2,7 +2,7 @@
 
 #include <Eigen/Geometry>
 
-#include <Util/Util.h>
+#include <Util/Util.hpp>
 
 namespace TGK {
 namespace WheelProcessor {

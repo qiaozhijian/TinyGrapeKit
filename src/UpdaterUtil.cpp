@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include <Util/Util.h>
+#include <Util/Util.hpp>
 
 #include <glog/logging.h>
 #include <iomanip>

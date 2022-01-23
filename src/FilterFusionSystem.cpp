@@ -83,8 +83,6 @@ bool FilterFusionSystem::FeedWheelData(const double timestamp, const double left
     wheel_ptr->left = left;
     wheel_ptr->right = right;
 
-
-
     // Sync with image data.
     std::vector<TGK::BaseType::WheelDataConstPtr> wheel_data_segment;
     TGK::BaseType::MonoImageDataConstPtr img_ptr;
@@ -235,9 +233,6 @@ bool FilterFusionSystem::FeedImageData(const double timestamp, const cv::Mat& im
 
     // Sync with wheel data.
     data_sync_->FeedMonoImageData(img_ptr);
-
-    std::cerr<<"1999999Q"<<std::endl;
-
     return true;
 }
 

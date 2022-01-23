@@ -4,7 +4,7 @@
 #include <glog/logging.h>
 
 #include <FilterFusion/UpdaterUtil.h>
-#include <Util/Util.h>
+#include <Util/Util.hpp>
 
 #include <LocalCartesian.hpp>
 

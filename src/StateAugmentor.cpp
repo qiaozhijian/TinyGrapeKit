@@ -1,5 +1,5 @@
 #include <FilterFusion/StateAugmentor.h>
-#include <Util/Util.h>
+#include <Util/Util.hpp>
 
 namespace FilterFusion {
 

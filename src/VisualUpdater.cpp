@@ -5,7 +5,7 @@
 
 #include <glog/logging.h>
 
-#include <Util/Util.h>
+#include <Util/Util.hpp>
 #include <FilterFusion/UpdaterUtil.h>
 
 namespace FilterFusion {
