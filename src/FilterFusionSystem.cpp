@@ -83,7 +83,7 @@ bool FilterFusionSystem::FeedWheelData(const double timestamp, const double left
     wheel_ptr->left = left;
     wheel_ptr->right = right;
 
-    std::cerr<<"100"<<std::endl;
+
 
     // Sync with image data.
     std::vector<TGK::BaseType::WheelDataConstPtr> wheel_data_segment;

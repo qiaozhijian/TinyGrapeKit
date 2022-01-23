@@ -3,7 +3,7 @@ project(msckf_viw)
 
 # Set C++14
 add_compile_options(-std=c++14)
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
+#set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 # Set cmake
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)

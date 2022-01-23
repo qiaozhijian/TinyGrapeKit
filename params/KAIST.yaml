@@ -1,7 +1,7 @@
 %YAML:1.0
 
 image_topic: /image/left_raw
-encoder_topic: /TwistStamped/encoder
+encoder_topic: /Odometry/encoder
 imu_topic: /imu/data
 
 # Camera intrinsic
