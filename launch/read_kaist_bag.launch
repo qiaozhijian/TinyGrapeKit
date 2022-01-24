@@ -1,0 +1,13 @@
+<launch>
+    <!--- Sim Time -->
+    <param name="/use_sim_time" value="true"/>
+
+    <node name="RunKAISTData" pkg="msckf_viw" type="ReadKAISTBag" output="screen"
+          args=" $(find msckf_viw)/params/KAIST.yaml">
+        <param name="project_dir" type="str" value="$(find msckf_viw)/"/>
+        <param name="rosbag_path" type="str" value="/media/qzj/Dataset/slamDataSet/KAIST/urban28_4.bag"/>
+    </node>
+
+</launch>
+
+

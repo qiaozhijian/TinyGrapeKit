@@ -75,25 +75,28 @@ public:
         while(ros::ok())
         {
             m_buf.lock();
-            if(!encoder_buf.empty())
+            while(!encoder_buf.empty())
             {
                 time_encoder = encoder_buf.front()->header.stamp.toSec();
-                left_enc_cnt = getleft_enc_cnt(encoder_buf.front());
-                right_enc_cnt = getright_enc_cnt(encoder_buf.front());
+                if(time_encoder>time_img)
+                    break;
+//                LOG(INFO) << std::fixed << "time encoder: " << time_encoder;
+                left_enc_cnt = encoder_buf.front()->twist.twist.linear.x;
+                right_enc_cnt = encoder_buf.front()->twist.twist.linear.y;
+//                LOG(INFO) << std::fixed << "left_enc_cnt: " << left_enc_cnt;
+//                LOG(INFO) << std::fixed << "right_enc_cnt: " << right_enc_cnt;
 
-                encoder_ready = true;
+                m_buf.unlock();
+                mpFilterFusion->FeedWheelData(time_encoder, left_enc_cnt, right_enc_cnt);
+                m_buf.lock();
                 encoder_buf.pop();
             }
             m_buf.unlock();
 
-            if(encoder_ready){
-                encoder_ready = false;
-                mpFilterFusion->FeedWheelData(time_encoder, left_enc_cnt, right_enc_cnt);
-            }
-
             m_buf.lock();
             if(!img_buf.empty())
             {
+//                LOG(INFO) << std::fixed << "time image: " << time_img;
                 time_img = img_buf.front()->header.stamp.toSec();
                 image = getImageFromMsg(img_buf.front());
                 camera_ready = true;
@@ -242,27 +245,16 @@ public:
 //
 //        return right_enc_cnt;
 //    }
-    double getleft_enc_cnt(const nav_msgs::OdometryConstPtr &encoder_msgs)
-    {
-        nav_msgs::Odometry encoder;
-        double left_enc_cnt = encoder_msgs->twist.twist.linear.x;
-        return left_enc_cnt;
-    }
-    double getright_enc_cnt(const nav_msgs::OdometryConstPtr &encoder_msgs)
-    {
-        nav_msgs::Odometry encoder;
-        double right_enc_cnt = encoder_msgs->twist.twist.linear.y;
-        return right_enc_cnt;
-    }
 
-
-private:
-
-    std::shared_ptr<FilterFusion::FilterFusionSystem> mpFilterFusion;
+public:
 
     std::string image_topic;
     std::string encoder_topic;
     std::string imu_topic;
+
+    std::shared_ptr<FilterFusion::FilterFusionSystem> mpFilterFusion;
+
+private:
 
     ros::Subscriber subImage;
     ros::Subscriber subEncoder;

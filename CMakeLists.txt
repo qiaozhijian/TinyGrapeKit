@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
         nav_msgs
         tf
         cv_bridge
+        rosbag
         image_transport
         )
 catkin_package()
@@ -56,3 +57,6 @@ target_link_libraries(${PROJECT_NAME} pangolin ${CERES_LIBRARIES} ${catkin_LIBRA
 ## Declare C++ executables
 add_executable(RunKAISTData example/RunKAISTData.cpp)
 target_link_libraries(RunKAISTData ${PROJECT_NAME})
+
+add_executable(ReadKAISTBag example/ReadKAISTBag.cpp)
+target_link_libraries(ReadKAISTBag ${PROJECT_NAME})

@@ -86,6 +86,7 @@ bool FilterFusionSystem::FeedWheelData(const double timestamp, const double left
     // Sync with image data.
     std::vector<TGK::BaseType::WheelDataConstPtr> wheel_data_segment;
     TGK::BaseType::MonoImageDataConstPtr img_ptr;
+//    获得上一次和当前帧图像之间的轮速记信息
     if (!data_sync_->FeedWheelData(wheel_ptr, &wheel_data_segment, &img_ptr)) { 
         return true;
     }
